@@ -199,7 +199,14 @@ class Azul:
                 continue
 
             # Given selected factory, get tile choice from player.
-            return factory.select_tile()
+            # Move remainder from factory to pool.
+            tile, quantity = factory.select_tile()
+            for i in range(5):
+                if factory.tiles[i] != 0:
+                    self.pool.tiles[i] = factory.tiles[i]
+                    factory.tiles[i] = 0
+
+            return tile, quantity
 
     def select_from_pool(self):
         # Selecting from pool, get tile choice from player.
