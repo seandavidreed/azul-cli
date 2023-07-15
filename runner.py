@@ -3,34 +3,56 @@ import azul
 # Initialize game components.
 drawbag = azul.DrawBag(num_tiles=20)
 factory_set = azul.FactorySet(num_factories=5)
+playerboard_set = azul.PlayerBoardSet(num_players=2)
 lid = azul.TileMatrix()
 pool = azul.TileMatrix()
+current_player = 0
 
 
-# # GAME LOOP
-# while True:
+# GAME LOOP
+while True:
+    ''' 
+    Resolve playerboards (move tiles from stage to mosaic and remainder to lid, tally scores).
+    Restock factories
+    '''
+    current_player = playerboard_set.resolve(lid)
+    if current_player < 0:
+        # GAME ENDS
+        pass
 
-#     ''' 1. Resolve playerboards (move tiles from stage to mosaic and remainder to lid, tally scores). '''
+    factory_set.add_tiles(drawbag, lid)
 
-#     ''' 2. Check each playerboard for win conditions. Initiate end of game sequence if true. '''
+    '''
+    Commence turn taking.
+    '''
 
-#     ''' 3. Restock factories '''
+    print("FACTORIES")
+    factory_set.print()
 
-#     ''' 4. Determine starting player '''
+    print("POOL")
+    pool.print()
 
-# TESTING
-drawbag.print()
-print()
-lid.print()
+    print(f"PLAYER {current_player + 1} BOARD")
+    playerboard_set.player_boards[current_player].print()
 
-factory_set.print()
+    temp = input("HALT")
 
-factory_set.add_tiles(drawbag, lid)
 
-factory_set.print()
 
-print()
 
-drawbag.print()
-print()
-lid.print()
+    # # TESTING
+    # drawbag.print()
+    # print()
+    # lid.print()
+
+    # factory_set.print()
+
+    # factory_set.add_tiles(drawbag, lid)
+
+    # factory_set.print()
+
+    # print()
+
+    # drawbag.print()
+    # print()
+    # lid.print()

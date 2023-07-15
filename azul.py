@@ -69,6 +69,7 @@ class TileMatrix:
         '''
         for tile_set in self.tiles:
             print(tile_set)
+        print()
 
 
 class DrawBag(TileMatrix):
@@ -163,17 +164,14 @@ class FactorySet:
             factory_num += 1
 
 
-class Playerboard:
+class PlayerBoard:
     def __init__(self):
         self.points = 0
         self.first_player_token = False
         self.stage = TileMatrix()
         self.mosaic = [
-            {Color.BLUE.name: None, Color.YELLOW.name: None, Color.RED.name: None, Color.Black.name: None, Color.WHITE.name: None},
-            {Color.YELLOW.name: None, Color.RED.name: None, Color.Black.name: None, Color.WHITE.name: None, Color.BLUE.name: None},
-            {Color.RED.name: None, Color.Black.name: None, Color.WHITE.name: None, Color.BLUE.name: None, Color.YELLOW.name: None},
-            {Color.Black.name: None, Color.WHITE.name: None, Color.BLUE.name: None, Color.YELLOW.name: None, Color.RED.name: None},
-            {Color.WHITE.name: None, Color.BLUE.name: None, Color.YELLOW.name: None, Color.RED.name: None, Color.Black.name: None},
+            [None, None, None, None, None]
+            for _ in range(5)
         ]
         self.penalties = [
             [-1, None],
@@ -185,18 +183,86 @@ class Playerboard:
             [-3, None]
         ]
 
+    def index(self, number: int, tile_index: int):
+        '''
+        Calculate mosaic index for tile using row number.
+        Used in the tessellate method.
+        '''
+        index = tile_index + number
+        index %= 5
+        return index
+
+    def score(self, row_num: int, index: int):
+        '''
+        Calculate score for adjacent tiles after placing new tile.
+        If complete row is found, return 2.
+        Used in the tessellate method.
+        '''
+        game_end = -1
+        self.points += 1
+
+        # Check left
+        ptr = index - 1
+        while ptr >= 0:
+            if self.mosaic[row_num][ptr] is not None:
+                self.points +=1
+            else:
+                break
+            ptr -= 1
+        
+        # Check if left side is full for game end condition.
+        game_end -= 1 if ptr < 0 else 0
+
+        # Check right
+        ptr = index + 1
+        while ptr <= 4:
+            if self.mosaic[row_num][ptr] is not None:
+                self.points += 1
+            else:
+                break
+            ptr += 1
+
+        # Check if right side is full for game end condition.
+        result -= 1 if ptr > 4 else 0
+        
+        # Check up
+        ptr = row_num - 1
+        while ptr >= 0:
+            if self.mosaic[ptr][index] is not None:
+                self.points += 1
+            else:
+                break
+            ptr -= 1
+
+        # Check down
+        ptr = row_num + 1
+        while ptr <= 4:
+            if self.mosaic[ptr][index] is not None:
+                self.points += 1
+            else:
+                break
+            ptr += 1
+
+        return game_end
+
     def tessellate(self, lid: TileMatrix):
         '''
         For any full stage row, place one of its tiles in the mosaic
         and the remainder, if there are any, in the lid.
+
+        Calculate points and update player score.
         '''
-        for number, row in enumerate(self.stage):
-            if number + 1 == len(row):
+        game_end = 0
+        for row_num, row in enumerate(self.stage.tiles):
+            if row_num + 1 == len(row):
                 tile = row.pop()
-                self.mosaic[number][tile.name] = tile
+                index = self.index(row_num, tile.index)
+                self.mosaic[row_num][index] = tile
+                game_end = self.score(row_num, index)
                 while row:
                     tile = row.pop()
                     lid.tiles[tile.index].append(tile)
+        return game_end
 
     def take_penalties(self, lid: TileMatrix):
         '''
@@ -208,12 +274,57 @@ class Playerboard:
             if row[1] is not None:
                 penalty += row[0]
                 tile = row.pop()
+                row.append(None)
                 lid.tiles[tile.index].append(tile)
 
         self.points += penalty
         if self.points < 0:
             self.points = 0
+
+    def print(self):
+        '''
+        Print out the whole playerboard spread.
+        '''
+        for i in range(5):
+            print(self.mosaic[i], end=' | ')
+            print(self.stage.tiles[i])
+        
+        print()
+        print(self.penalties)
+
+
+class PlayerBoardSet:
+    def __init__(self, num_players=2):
+        self.player_boards = [
+            PlayerBoard() for _ in range(num_players)
+        ]
     
+    def resolve(self, lid: TileMatrix) -> int:
+        '''
+        Iterate through playerboards:
+            Move tiles from stage to mosaic and calculate score,
+            checking for game end condition.
+
+            Calculate penalty for player and discard penalty tiles to lid.
+
+            Determine first player.
+
+            If game end condition is triggered, return game end.
+            Else return current_player
+        '''
+        current_player = 0
+        for player_num, board in enumerate(self.player_boards):
+            game_end = board.tessellate(lid)
+            board.take_penalties(lid)
+            if board.first_player_token:
+                board.first_player_token = False
+                current_player = player_num
+        
+        if game_end == -3:
+            return game_end
+        return current_player
+
+
     # def print_tableau(self):
     #     for i in range(5):
     #         row = list(self.grid[i].values())
