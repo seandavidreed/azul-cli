@@ -2,6 +2,12 @@ import random
 from enum import Enum
 
 
+def input_error(choice: int, a: int, b: int):
+    if choice < a or choice > b:
+        print("Invalid Selection")
+        return True
+    return False
+
 class Color(Enum):
     BLUE = 0
     YELLOW = 1
@@ -30,15 +36,31 @@ class TileMatrix:
             list(Tile(Color.WHITE) for _ in range(num_tiles))
         ]
 
-    def get_tiles_of_color(self, color: Color):
+    def get_tiles_of_color(self):
         '''
         Get tiles of only specified color. Useful as when player
         is selecting tiles from a factory or the pool on their turn.
         '''
-        tile_set = None
-        if self.tiles[color.value]:
-            tile_set = self.tiles[color.value]
-            self.tiles[color.value].clear()
+        tile_set = []
+        num_options = 0
+        for row in self.tiles:
+            if row:
+                num_options += 1
+
+        print("Select Tiles: ", end='')
+        while True:
+            choice = int(input())
+            if not input_error(choice, 1, num_options):
+                break
+        
+        count = 0
+        for row in self.tiles:
+            count += 1 if row else 0
+            if count == choice:
+                tile_set.extend(row)
+                row.clear()
+                break
+        
         return tile_set
 
     def get_all_tiles(self):
@@ -62,14 +84,25 @@ class TileMatrix:
             if tile_set:
                 return False
         return True
-    
+
     def print(self):
         '''
-        Print all tiles in TileMatrix.
+        Print a single given factory. Called from print
+        method in FactorySet class.
         '''
-        for tile_set in self.tiles:
-            print(tile_set)
-        print()
+        number = 1
+        for row in self.tiles:
+            if row:
+                print(f"[{number}] - {row}")
+                number += 1
+    
+    # def print(self):
+    #     '''
+    #     Print all tiles in TileMatrix.
+    #     '''
+    #     for tile_set in self.tiles:
+    #         print(tile_set)
+    #     print()
 
 
 class DrawBag(TileMatrix):
@@ -117,6 +150,7 @@ class Factory(TileMatrix):
 
 class FactorySet:
     def __init__(self, num_factories):
+        self.num_factories = num_factories
         self.factories = [
             Factory() for _ in range(num_factories)
         ]
@@ -128,14 +162,33 @@ class FactorySet:
         '''
         for factory in self.factories:
             factory.add_tiles(drawbag, lid)
-    
-    def choose_tiles(self):
+
+    def choose_tiles(self, pool: TileMatrix):
         '''
         Select tile of one color from a single factory.
         Useful as when player is selecting tiles from a
         factory or the pool on their turn. 
         '''
-        pass
+        while True:
+            # Get factory selection from player.
+            print(f"Select Factory <1 - {self.num_factories}>:")
+            choice = int(input())
+            factory = self.factories[choice - 1]
+
+            # Verify that factory is not empty.
+            if factory.is_empty():
+                print("Factory is empty. Please select another.")
+                continue
+
+            # Given selected factory, get tile choice from player.
+            # Move remainder from factory to pool.
+            tile_set = factory.get_tiles_of_color()
+            remainder = factory.get_all_tiles()
+            
+            for tile in remainder:
+                pool.tiles[tile.index].append(tile)
+
+            return tile_set
 
     def is_empty(self):
         '''
@@ -182,6 +235,68 @@ class PlayerBoard:
             [-3, None],
             [-3, None]
         ]
+
+    def staging_error(self, row: int, tile_set: list):
+        if len(self.stage.tiles[row - 1]) == 0:
+            return False
+            
+        if self.stage.tiles[row - 1][0] == tile_set[0]:
+            return False
+        
+        print("That row already has tiles of a different color. Pick another row.")
+        return False
+    
+    def stage_tiles(self, tile_set: list, lid: TileMatrix):
+        for i in range(5):
+            print(f"[{i + 1}] - {self.stage[i]}")
+        
+        while True:
+            print(f"Select Stage Row to in which to place {len(tile_set)} {tile_set[0].name} tiles:")
+            row = int(input())
+            if not input_error(row, 1, 5) and not self.staging_error(row, tile_set):
+                break
+
+        # Add tiles to staging and if list is too long,
+        # transfer the extra tiles to penalties row.
+        self.stage.tiles[row - 1].extend(tile_set)
+        if len(self.stage.tiles[row - 1]) > row:
+            penalty_tiles = self.stage.tiles[row:]
+            self.stage.tiles.remove(penalty_tiles)
+        
+        for i in range(7):
+            if self.penalties[i][1] is not None:
+                tile = penalty_tiles.pop()
+                if tile:
+                    self.penalties[i][1] = tile
+                else:
+                    break
+        
+        # If penalty row is full, discard extra tiles in lid.
+        if penalty_tiles:
+            lid.tiles.extend(penalty_tiles)
+
+    def take_turn(self, factory_set: FactorySet, pool: TileMatrix):
+        '''
+        Select from factory_set or pool.
+        '''
+        print("[1] - Factories\n[2] - Pool\nChoice: ", end='')
+        while True:
+            choice = int(input())
+            if not input_error(choice, 1, 2):
+                break
+
+        if choice == 1:
+            print("Select factory ")
+            tile_set = factory_set.choose_tiles(pool)
+        else:
+            tile_set = pool.get_tiles_of_color()
+        
+        print("Select where to stage tiles: ", end='')
+        while True:
+            choice = int(input())
+            if not input_error(choice, 1, 5):
+                break
+        self.stage.tiles[choice].extend(tile_set)
 
     def index(self, number: int, tile_index: int):
         '''
@@ -341,48 +456,7 @@ class PlayerBoardSet:
 
     #     print(self.penalties)
 
-    # def update_tableau(self, tile: int, quantity: int):
-    #     while True:
-    #         for i in range(5):
-    #             print(f"[{i + 1}] - {self.stage[i]}")
-    #         print(f"Select Stage Row to in which to place {quantity} {TILES[tile][1]} tiles:")
-    #         row = int(input()) - 1
-    #         if len(self.stage[row]) == 0:
-    #             for _ in range(row + 1):
-    #                 self.stage[row].append(tile)
-    #                 quantity -= 1
-    #                 if quantity == 0:
-    #                     return 0
-    #             to_lid = self.take_penalties(quantity)
-    #             return to_lid
-    #         elif tile in self.stage[row]:
-    #             pass
-            
-    #         print("Row contains a different color. Try Again.")
-    #         continue
 
-
-# def select_from_factory(self):
-#     while True:
-#         # Get factory selection from player.
-#         print(f"Select Factory <1 - {self.num_factories}>:")
-#         choice = int(input())
-#         factory = self.factories[choice - 1]
-
-#         # Verify that factory is not empty.
-#         if factory.is_empty():
-#             print("Factory is empty. Please select another.")
-#             continue
-
-#         # Given selected factory, get tile choice from player.
-#         # Move remainder from factory to pool.
-#         tile, quantity = factory.select_tile()
-#         for i in range(5):
-#             if factory.tiles[i] != 0:
-#                 self.pool.tiles[i] = factory.tiles[i]
-#                 factory.tiles[i] = 0
-
-#         return tile, quantity
 
 # def select_from_pool(self):
 #     # Selecting from pool, get tile choice from player.
@@ -396,55 +470,3 @@ class PlayerBoardSet:
 #     elif choice == 2:
 #         tile, quantity = self.select_from_pool()
 #     return tile, quantity
-    
-# def play(self):
-#     # Initialize game components
-#     playerboards = self.playerboards
-#     factories = self.factories
-#     drawbag = self.drawbag
-#     lid = self.lid
-#     pool = self.pool
-
-#     # Add tiles to factories
-#     for factory in factories:
-#         factory.add_tiles(drawbag)
-
-#     first_player_token = True
-#     current_player = -1
-
-#     # GAME LOOP
-#     while True:
-#         # Establish player turn.
-#         current_player += 1
-#         current_player %= 2
-
-#         # Display factories
-#         for number, factory in enumerate(factories):
-#             print(f"\nFACTORY {number + 1}")
-#             if factory.is_empty():
-#                 print()
-#             else:
-#                 factory.print()
-        
-#         # Display pool
-#         print("\nPOOL")
-#         print(f'First Player Token: {first_player_token}')
-#         pool.print()
-        
-#         # Display playerboard
-#         print(f"\nPLAYER {current_player + 1} BOARD")
-#         playerboards[current_player].print_tableau()
-        
-#         # Display Player Menu and take action.
-#         tile, quantity = self.actions()
-        
-#         # Update playerboard
-#         to_lid = playerboards[self.current_player].update_tableau(tile, quantity)
-#         lid.tiles[tile] += to_lid
-#         print("\nLID")
-#         print(lid.tiles)
-#         print()
-#         playerboards[current_player].print_tableau()
-        
-#         print("\nPress Enter to Continue to Next Player's Turn")
-#         do_nothing = input()

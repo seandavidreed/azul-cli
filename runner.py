@@ -13,7 +13,7 @@ current_player = 0
 while True:
     ''' 
     Resolve playerboards (move tiles from stage to mosaic and remainder to lid, tally scores).
-    Restock factories
+    Restock factories.
     '''
     current_player = playerboard_set.resolve(lid)
     if current_player < 0:
@@ -23,9 +23,8 @@ while True:
     factory_set.add_tiles(drawbag, lid)
 
     '''
-    Commence turn taking.
+    Display tableau.
     '''
-
     print("FACTORIES")
     factory_set.print()
 
@@ -35,24 +34,36 @@ while True:
     print(f"PLAYER {current_player + 1} BOARD")
     playerboard_set.player_boards[current_player].print()
 
+    '''
+    Make choices.
+    '''
+    tile_set = playerboard_set.player_boards[current_player].take_turn(factory_set, pool)
+
+    factory_set.print()
+    pool.print()
+    print(tile_set)
+    playerboard_set.player_boards[current_player].print()
+
     temp = input("HALT")
 
+    
 
 
 
-    # # TESTING
-    # drawbag.print()
-    # print()
-    # lid.print()
 
-    # factory_set.print()
-
-    # factory_set.add_tiles(drawbag, lid)
-
-    # factory_set.print()
-
-    # print()
-
-    # drawbag.print()
-    # print()
-    # lid.print()
+#     # GAME LOOP
+#     while True:
+        
+#         # Display Player Menu and take action.
+#         tile, quantity = self.actions()
+        
+#         # Update playerboard
+#         to_lid = playerboards[self.current_player].update_tableau(tile, quantity)
+#         lid.tiles[tile] += to_lid
+#         print("\nLID")
+#         print(lid.tiles)
+#         print()
+#         playerboards[current_player].print_tableau()
+        
+#         print("\nPress Enter to Continue to Next Player's Turn")
+#         do_nothing = input()
