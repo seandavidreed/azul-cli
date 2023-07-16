@@ -1,35 +1,57 @@
 import azul
+import os
 
 # Initialize game components.
+num_players = 2
+num_factories = (num_players * 2) + 1
 drawbag = azul.DrawBag(num_tiles=20)
-factory_set = azul.FactorySet(num_factories=5)
-playerboard_set = azul.PlayerBoardSet(num_players=2)
+factory_set = azul.FactorySet(num_factories=num_factories)
+playerboard_set = azul.PlayerBoardSet(num_players=num_players)
 lid = azul.TileMatrix()
 pool = azul.TileMatrix()
 current_player = 0
+first_player_token = True
+round = 0
 
 
 # GAME LOOP
 while True:
-    ''' 
-    Resolve playerboards (move tiles from stage to mosaic and remainder to lid, tally scores).
-    Restock factories.
-    '''
-    current_player = playerboard_set.resolve(lid)
-    if current_player < 0:
-        # GAME ENDS
-        pass
+    os.system('clear')
+    current_player = (current_player + 1) % num_players
 
-    factory_set.add_tiles(drawbag, lid)
+    if factory_set.is_empty() and pool.is_empty():
+        '''
+        Wrap up current round and prepare for next.
+        Resolve playerboard for each player:
+            Move staged tiles to mosaic,
+            Calculate score.
+            Take penalties.
+        Restock factories.
+        '''
+        round += 1
+        current_player = playerboard_set.resolve(lid)
+        if current_player < 0:
+            # GAME ENDS
+            pass
+
+        factory_set.add_tiles(drawbag, lid)
+        first_player_token = True
 
     '''
     Display tableau.
     '''
+    print(f'ROUND {round}')
+    print()
+
     print("FACTORIES")
+    print()
     factory_set.print()
 
     print("POOL")
+    if first_player_token:
+        print("First Player Token")
     pool.print()
+    print()
 
     print(f"PLAYER {current_player + 1} BOARD")
     playerboard_set.player_boards[current_player].print()
@@ -37,33 +59,18 @@ while True:
     '''
     Make choices.
     '''
-    tile_set = playerboard_set.player_boards[current_player].take_turn(factory_set, pool)
+    first_player_token = playerboard_set.player_boards[current_player].take_turn(first_player_token, factory_set, pool, lid)
 
+    print("FACTORIES")
+    print()
     factory_set.print()
+
+    print("POOL")
+    if first_player_token:
+        print("First Player Token")
     pool.print()
-    print(tile_set)
+    print()
+
     playerboard_set.player_boards[current_player].print()
 
     temp = input("HALT")
-
-    
-
-
-
-
-#     # GAME LOOP
-#     while True:
-        
-#         # Display Player Menu and take action.
-#         tile, quantity = self.actions()
-        
-#         # Update playerboard
-#         to_lid = playerboards[self.current_player].update_tableau(tile, quantity)
-#         lid.tiles[tile] += to_lid
-#         print("\nLID")
-#         print(lid.tiles)
-#         print()
-#         playerboards[current_player].print_tableau()
-        
-#         print("\nPress Enter to Continue to Next Player's Turn")
-#         do_nothing = input()

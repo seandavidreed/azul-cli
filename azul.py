@@ -236,19 +236,19 @@ class PlayerBoard:
             [-3, None]
         ]
 
-    def staging_error(self, row: int, tile_set: list):
+    def staging_error(self, row: int, tile_set: list[Tile]):
         if len(self.stage.tiles[row - 1]) == 0:
             return False
             
-        if self.stage.tiles[row - 1][0] == tile_set[0]:
+        if self.stage.tiles[row - 1][0].index == tile_set[0].index:
             return False
         
         print("That row already has tiles of a different color. Pick another row.")
-        return False
+        return True
     
-    def stage_tiles(self, tile_set: list, lid: TileMatrix):
+    def stage_tiles(self, tile_set: list[Tile], lid: TileMatrix):
         for i in range(5):
-            print(f"[{i + 1}] - {self.stage[i]}")
+            print(f"[{i + 1}] - {self.stage.tiles[i]}")
         
         while True:
             print(f"Select Stage Row to in which to place {len(tile_set)} {tile_set[0].name} tiles:")
@@ -258,24 +258,26 @@ class PlayerBoard:
 
         # Add tiles to staging and if list is too long,
         # transfer the extra tiles to penalties row.
+        penalty_tiles = []
         self.stage.tiles[row - 1].extend(tile_set)
         if len(self.stage.tiles[row - 1]) > row:
-            penalty_tiles = self.stage.tiles[row:]
-            self.stage.tiles.remove(penalty_tiles)
+            penalty_tiles = self.stage.tiles[row - 1][row:]
+            for _ in penalty_tiles:
+                self.stage.tiles[row - 1].pop()
         
-        for i in range(7):
-            if self.penalties[i][1] is not None:
-                tile = penalty_tiles.pop()
-                if tile:
-                    self.penalties[i][1] = tile
-                else:
-                    break
+            for i in range(7):
+                if self.penalties[i][1] is None:
+                    if penalty_tiles:
+                        tile = penalty_tiles.pop()
+                        self.penalties[i][1] = tile
+                    else:
+                        break
         
         # If penalty row is full, discard extra tiles in lid.
         if penalty_tiles:
             lid.tiles.extend(penalty_tiles)
 
-    def take_turn(self, factory_set: FactorySet, pool: TileMatrix):
+    def take_turn(self, first_player_token: bool, factory_set: FactorySet, pool: TileMatrix, lid: TileMatrix):
         '''
         Select from factory_set or pool.
         '''
@@ -289,14 +291,14 @@ class PlayerBoard:
             print("Select factory ")
             tile_set = factory_set.choose_tiles(pool)
         else:
+            if first_player_token:
+                self.first_player_token = True
+                first_player_token = False
             tile_set = pool.get_tiles_of_color()
         
-        print("Select where to stage tiles: ", end='')
-        while True:
-            choice = int(input())
-            if not input_error(choice, 1, 5):
-                break
-        self.stage.tiles[choice].extend(tile_set)
+        self.stage_tiles(tile_set, lid)
+
+        return first_player_token
 
     def index(self, number: int, tile_index: int):
         '''
@@ -338,7 +340,7 @@ class PlayerBoard:
             ptr += 1
 
         # Check if right side is full for game end condition.
-        result -= 1 if ptr > 4 else 0
+        game_end -= 1 if ptr > 4 else 0
         
         # Check up
         ptr = row_num - 1
@@ -438,35 +440,3 @@ class PlayerBoardSet:
         if game_end == -3:
             return game_end
         return current_player
-
-
-    # def print_tableau(self):
-    #     for i in range(5):
-    #         row = list(self.grid[i].values())
-    #         for j in range(5):
-    #             if row[j] == 0:
-    #                 print(" --- ", end='')
-    #                 continue
-    #             print(row[j], end='')
-    #         print("  |  ", end='')
-    #         if self.stage[i]:
-    #             for value in self.stage[i]:
-    #                 print(TILES[value][1], end=' ')
-    #         print()
-
-    #     print(self.penalties)
-
-
-
-# def select_from_pool(self):
-#     # Selecting from pool, get tile choice from player.
-#     return self.pool.select_tile()
-
-# def actions(self):
-#     print("[1] - Factory\n[2] - Pool")
-#     choice = int(input())
-#     if choice == 1:
-#         tile, quantity = self.select_from_factory()
-#     elif choice == 2:
-#         tile, quantity = self.select_from_pool()
-#     return tile, quantity
