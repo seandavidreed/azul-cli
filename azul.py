@@ -38,6 +38,10 @@ class Tile:
     def __repr__(self):
         return str(self.name)
 
+    def __eq__(self, other):
+        if isinstance(other, Tile):
+            return self.index == other.index     
+
 
 class TileMatrix:
     def __init__(self, num_tiles=0):
@@ -234,6 +238,10 @@ class PlayerBoard:
         ]
 
     def staging_error(self, row: int, tile_set: list[Tile]):
+        if tile_set[0] in self.mosaic[row - 1]:
+            print("Your mosaic already has that tile in this row!")
+            return True
+            
         if len(self.stage.tiles[row - 1]) == 0:
             return False
             
@@ -247,7 +255,7 @@ class PlayerBoard:
         for i in range(5):
             print(f"[{i + 1}] - {self.stage.tiles[i]}")
         print("[6] - Take As Penalty")
-        
+
         while True:
             row = take_input(f"Select Stage Row in which to place {len(tile_set)} {tile_set[0].name} tiles", 1, 6)
             if row == 6:
@@ -290,19 +298,26 @@ class PlayerBoard:
         '''
         Select from factory_set or pool.
         '''
-        choice = take_input("[1] - Factories\n[2] - Pool", 1, 2)
+        while True:
+            choice = take_input("[1] - Factories\n[2] - Pool", 1, 2)
 
-        if choice == 1:
-            tile_set = factory_set.select(pool)
-        else:
-            if first_player_token:
-                self.first_player_token = True
-                first_player_token = False
-            tile_set = pool.get_tiles_of_color()
+            if choice == 1:
+                if factory_set.is_empty():
+                    print("All factories are empty!")
+                    continue
+                tile_set = factory_set.select(pool)
+            else:
+                if pool.is_empty():
+                    print("Pool is empty!")
+                    continue
+                if first_player_token:
+                    self.first_player_token = True
+                    first_player_token = False
+                tile_set = pool.get_tiles_of_color()
         
-        self.stage_tiles(tile_set, lid)
+            self.stage_tiles(tile_set, lid)
 
-        return first_player_token
+            return first_player_token
 
     def index(self, number: int, tile_index: int):
         '''
