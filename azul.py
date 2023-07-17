@@ -2,11 +2,23 @@ import random
 from enum import Enum
 
 
-def input_error(choice: int, a: int, b: int):
-    if choice < a or choice > b:
-        print("Invalid Selection")
-        return True
-    return False
+def take_input(prompt: str, a: int, b: int):
+    err_msg = "Input must be an integer between {} and {}".format(a, b)
+    while True:
+        print(f'{prompt}\n', "Choice: ", sep='', end='')
+        choice = input()
+
+        try:
+            choice = int(choice)
+        except ValueError:
+            print(err_msg)
+            continue
+
+        if choice < a or choice > b:
+            print(err_msg)
+            continue
+
+        return choice
 
 class Color(Enum):
     BLUE = 0
@@ -47,11 +59,7 @@ class TileMatrix:
             if row:
                 num_options += 1
 
-        print("Select Tiles: ", end='')
-        while True:
-            choice = int(input())
-            if not input_error(choice, 1, num_options):
-                break
+        choice = take_input(prompt="Select Tiles", a=1, b = num_options)
         
         count = 0
         for row in self.tiles:
@@ -95,14 +103,6 @@ class TileMatrix:
             if row:
                 print(f"[{number}] - {row}")
                 number += 1
-    
-    # def print(self):
-    #     '''
-    #     Print all tiles in TileMatrix.
-    #     '''
-    #     for tile_set in self.tiles:
-    #         print(tile_set)
-    #     print()
 
 
 class DrawBag(TileMatrix):
@@ -163,7 +163,7 @@ class FactorySet:
         for factory in self.factories:
             factory.add_tiles(drawbag, lid)
 
-    def choose_tiles(self, pool: TileMatrix):
+    def select(self, pool: TileMatrix):
         '''
         Select tile of one color from a single factory.
         Useful as when player is selecting tiles from a
@@ -171,8 +171,7 @@ class FactorySet:
         '''
         while True:
             # Get factory selection from player.
-            print(f"Select Factory <1 - {self.num_factories}>:")
-            choice = int(input())
+            choice = take_input(f"Select Factory", a=1, b=self.num_factories)
             factory = self.factories[choice - 1]
 
             # Verify that factory is not empty.
@@ -206,15 +205,16 @@ class FactorySet:
         '''
         factory_num = 1
         for factory in self.factories:
-            print(f'FACTORY {factory_num}')
-            number = 1
-            for row in factory.tiles:
-                if not row:
-                    continue
-                print(f"[{number}] - {row}")
-                number += 1
-            print()
-            factory_num += 1
+            if factory.tiles:
+                print(f'FACTORY {factory_num}')
+                number = 1
+                for row in factory.tiles:
+                    if not row:
+                        continue
+                    print(f"[{number}] - {row}")
+                    number += 1
+                print()
+                factory_num += 1
 
 
 class PlayerBoard:
@@ -251,9 +251,8 @@ class PlayerBoard:
             print(f"[{i + 1}] - {self.stage.tiles[i]}")
         
         while True:
-            print(f"Select Stage Row to in which to place {len(tile_set)} {tile_set[0].name} tiles:")
-            row = int(input())
-            if not input_error(row, 1, 5) and not self.staging_error(row, tile_set):
+            row = take_input(f"Select Stage Row to in which to place {len(tile_set)} {tile_set[0].name} tiles", 1, 5)
+            if not self.staging_error(row, tile_set):
                 break
 
         # Add tiles to staging and if list is too long,
@@ -281,15 +280,10 @@ class PlayerBoard:
         '''
         Select from factory_set or pool.
         '''
-        print("[1] - Factories\n[2] - Pool\nChoice: ", end='')
-        while True:
-            choice = int(input())
-            if not input_error(choice, 1, 2):
-                break
+        choice = take_input("[1] - Factories\n[2] - Pool", 1, 2)
 
         if choice == 1:
-            print("Select factory ")
-            tile_set = factory_set.choose_tiles(pool)
+            tile_set = factory_set.select(pool)
         else:
             if first_player_token:
                 self.first_player_token = True

@@ -61,16 +61,6 @@ while True:
     '''
     first_player_token = playerboard_set.player_boards[current_player].take_turn(first_player_token, factory_set, pool, lid)
 
-    print("FACTORIES")
-    print()
-    factory_set.print()
-
-    print("POOL")
-    if first_player_token:
-        print("First Player Token")
-    pool.print()
-    print()
-
     playerboard_set.player_boards[current_player].print()
 
-    temp = input("HALT")
+    input("\nPress enter to continue")
