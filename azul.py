@@ -20,6 +20,7 @@ def take_input(prompt: str, a: int, b: int):
 
         return choice
 
+
 class Color(Enum):
     BLUE = 0
     YELLOW = 1
@@ -143,9 +144,11 @@ class Factory(TileMatrix):
         '''
         number = 1
         for row in self.tiles:
-            if row:
-                print(f"[{number}] - {row}")
-                number += 1
+            if not row:
+                continue
+            print(f"[{number}] - {row}")
+            number += 1
+        print()
 
 
 class FactorySet:
@@ -205,16 +208,10 @@ class FactorySet:
         '''
         factory_num = 1
         for factory in self.factories:
-            if factory.tiles:
+            if not factory.is_empty():
                 print(f'FACTORY {factory_num}')
-                number = 1
-                for row in factory.tiles:
-                    if not row:
-                        continue
-                    print(f"[{number}] - {row}")
-                    number += 1
-                print()
-                factory_num += 1
+                factory.print()
+            factory_num += 1
 
 
 class PlayerBoard:
@@ -249,9 +246,22 @@ class PlayerBoard:
     def stage_tiles(self, tile_set: list[Tile], lid: TileMatrix):
         for i in range(5):
             print(f"[{i + 1}] - {self.stage.tiles[i]}")
+        print("[6] - Take As Penalty")
         
         while True:
-            row = take_input(f"Select Stage Row to in which to place {len(tile_set)} {tile_set[0].name} tiles", 1, 5)
+            row = take_input(f"Select Stage Row in which to place {len(tile_set)} {tile_set[0].name} tiles", 1, 6)
+            if row == 6:
+                penalty_tiles = tile_set
+                for i in range(7):
+                    if self.penalties[i][1] is None:
+                        if penalty_tiles:
+                            tile = penalty_tiles.pop()
+                            self.penalties[i][1] = tile
+                        else:
+                            break
+                if penalty_tiles:
+                    lid.tiles.extend(penalty_tiles)
+                return
             if not self.staging_error(row, tile_set):
                 break
 
@@ -396,6 +406,7 @@ class PlayerBoard:
         '''
         Print out the whole playerboard spread.
         '''
+        print(f'Points: {self.points}')
         for i in range(5):
             print(self.mosaic[i], end=' | ')
             print(self.stage.tiles[i])
@@ -434,3 +445,16 @@ class PlayerBoardSet:
         if game_end == -3:
             return game_end
         return current_player
+    
+    def find_winner(self):
+        '''
+        Ultimately, this will need to calculate the end game score bonuses.
+        '''
+        highest_score = 0
+        highest_scoring_player = 0
+        for player_num, player in enumerate(self.player_boards):
+            if player.points >= highest_score:
+                highest_scoring_player = player_num
+                highest_score = player.points
+        
+        return highest_scoring_player, highest_score

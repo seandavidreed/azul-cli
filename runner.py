@@ -31,8 +31,9 @@ while True:
         round += 1
         current_player = playerboard_set.resolve(lid)
         if current_player < 0:
-            # GAME ENDS
-            pass
+            player, score = playerboard_set.find_winner()
+            print(f"Congrats Player {player}, you won with {score} points!")
+            exit()
 
         factory_set.add_tiles(drawbag, lid)
         first_player_token = True
