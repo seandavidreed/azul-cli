@@ -381,14 +381,19 @@ class PlayerBoard:
 
         return game_end
     
-    # def endgame_bonus(self):
-    #     tile_array = [0] * 5
-    #     row_bonus = 0
-    #     column_bonus = 0
-    #     color_bonus = 0
-    #     for i in range(5):
-    #         row_bonus += 1 if not None in self.mosaic[i] else 0
-    #         column = [self.mosaic[j][i] for j in range(5)]
+    def endgame_bonus(self):
+        tile_array = [0] * 5
+        column = 0
+        row = 0
+        for i in range(5):
+            tile_array[i] += 1 if i in self.mosaic[i] else 0
+            for j in range(5):
+                row += 1 if self.mosaic[i][j] != None else 0
+                column += 1 if self.mosaic[j][i] != None else 0
+        five_of_a_color = tile_array.count(5)
+        print(f'BEFORE BONUS: {self.points}')
+        self.points += ((row % 5) * 2) + ((column % 5) * 7) + (five_of_a_color * 10)
+        print(f'AFTER BONUS: {self.points}')
 
     def tessellate(self, lid: TileMatrix):
         '''
@@ -471,12 +476,10 @@ class PlayerBoardSet:
         return current_player
     
     def find_winner(self):
-        '''
-        Ultimately, this will need to calculate the end game score bonuses.
-        '''
         highest_score = 0
         highest_scoring_player = 0
         for player_num, player in enumerate(self.player_boards):
+            player.endgame_bonus()
             if player.points >= highest_score:
                 highest_scoring_player = player_num
                 highest_score = player.points

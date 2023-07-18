@@ -9,7 +9,7 @@ factory_set = azul.FactorySet(num_factories=num_factories)
 playerboard_set = azul.PlayerBoardSet(num_players=num_players)
 lid = azul.TileMatrix()
 pool = azul.TileMatrix()
-current_player = -1
+current_player = 0
 first_player_token = True
 round = 0
 
@@ -35,8 +35,8 @@ while True:
 
         factory_set.add_tiles(drawbag, lid)
         first_player_token = True
-
-    current_player = (current_player + 1) % num_players
+    else:
+        current_player = (current_player + 1) % num_players
 
     '''
     Display tableau.
