@@ -380,6 +380,15 @@ class PlayerBoard:
             ptr += 1
 
         return game_end
+    
+    # def endgame_bonus(self):
+    #     tile_array = [0] * 5
+    #     row_bonus = 0
+    #     column_bonus = 0
+    #     color_bonus = 0
+    #     for i in range(5):
+    #         row_bonus += 1 if not None in self.mosaic[i] else 0
+    #         column = [self.mosaic[j][i] for j in range(5)]
 
     def tessellate(self, lid: TileMatrix):
         '''
