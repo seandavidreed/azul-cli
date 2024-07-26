@@ -1,8 +1,21 @@
 import azul
 import os
+import sys
+import re
+
+# Get number of players from user
+if len(sys.argv) >= 2 and re.fullmatch(r'--players=\d', sys.argv[1]) is None:
+    exit("Error: please format input 'python3 runner.py --players=#'")
+
+if len(sys.argv) == 1:
+    result = 2
+else:
+    result = int(sys.argv[1].strip().split("=")[1])
+    if result < 2 or result > 4:
+        exit("Error: invalid number of players. Please input 2, 3, or 4.")
 
 # Initialize game components.
-num_players = 2
+num_players = result
 num_factories = (num_players * 2) + 1
 drawbag = azul.DrawBag(num_tiles=20)
 factory_set = azul.FactorySet(num_factories=num_factories)
